@@ -7,7 +7,7 @@
         "noEmitOnError": false,
         "noImplicitAny": false,
         "rootDir": "./src/",
-        "outDir": "./wwwroot/js/",
+        "outDir": "./wwwroot/",
         "removeComments": true,
         "sourceMap": true,
         "suppressImplicitAnyIndexErrors": true,

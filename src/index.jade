@@ -2,8 +2,27 @@ doctype html
 html(lang='en')
   head
     title Jade
-    link(href='/css/bootstrap.min.css', rel='stylesheet')
+    base(href='/')
+    link(href='/css/bootstrap/bootstrap.min.css', rel='stylesheet')
     link(href='/css/app.min.css', rel='stylesheet')
+    // polyfills
+    script(src='/js/vendors/es6-shim.js')
+    script(src='/js/vendors/es6-promise.js')
+    script(src='/js/vendors/system-polyfills.js')
+    script(src='/js/vendors/shims_for_IE.js')
+    script(src='/js/vendors/angular2-polyfills.js')
+    // system
+    script(src='/js/vendors/system.js')
+    // rxjs
+    script(src='/js/vendors/Rx.js')
+    // angular2
+    script(src='/js/vendors/angular2.dev.js')
+    script(src='/js/vendors/router.dev.js')
+    script(src='/js/vendors/http.dev.js')
+    // minified
+    script(type='text/javascript').
+      System.config({ packages: { app: { format: 'register', defaultExtension: 'js' } } });
+      System.import('/app/app.bootstrap').then(null, console.error.bind(console));
   body
     .container
       .col-xs-12
@@ -11,4 +30,5 @@ html(lang='en')
         p You are amazing
         p
           | Jade is a terse and simple templating language with a strong focus on performance and powerful features.
+        div(app='') loading...
     script(type='text/javascript', src='/js/app.min.js')

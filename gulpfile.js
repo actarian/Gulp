@@ -72,15 +72,17 @@ gulp.task('angularjs:compile', function() {
         }))
         .pipe(rename({
             dirname: '', // flatten directory
-        }))        
+        }))
         .pipe(gulp.dest(paths.vendors)) // save files
+        /*
         .pipe(sourcemaps.init())
         .pipe(concat(paths.vendors + names.vendors))
         .pipe(gulp.dest('.')) // save .js
         .pipe(uglify({ preserveComments: 'license' }))
         .pipe(rename({ extname: '.min.js' }))
         .pipe(sourcemaps.write('.'))
-        .pipe(gulp.dest('.')); // save .min.js  
+        .pipe(gulp.dest('.')); // save .min.js
+        */  
 });
 
 gulp.task('angularjs', ['vendors:clean', 'angularjs:compile'], function(done) { done(); });
@@ -108,21 +110,28 @@ gulp.task('angular2:compile', function() {
             dirname: '', // flatten directory
         }))        
         .pipe(gulp.dest(paths.vendors)) // save files
+        /*
         .pipe(sourcemaps.init())
         .pipe(concat(paths.vendors + names.vendors))
         .pipe(gulp.dest('.')) // save .js
         .pipe(uglify({ preserveComments: 'license' }))
         .pipe(rename({ extname: '.min.js' }))
         .pipe(sourcemaps.write('.'))
-        .pipe(gulp.dest('.')); // save .min.js  
+        .pipe(gulp.dest('.')); // save .min.js
+        */  
 });
 gulp.task('angular2', ['vendors:clean', 'angular2:compile'], function(done) { done(); });
 
 /**** JADE */
 gulp.task('jade:compile', function() {
-    var OPTIONS = {};
+    var options = {
+        pretty: true,
+    };
     return gulp.src(paths.src + matches.jade)
-        .pipe(jade({ locals: OPTIONS }))
+        .pipe(plumber(function(error) {
+            console.log('jade:compile error', error);
+        }))
+        .pipe(jade({ locals: options }))
         .pipe(gulp.dest(paths.wwwroot));
 });
 gulp.task('jade:watch', function() {
@@ -144,14 +153,11 @@ gulp.task('typescript:compile', function() {
         .pipe(plumber(function(error) {
             console.log('typescript:compile error', error);
         }))
-        .pipe(rename({
-            dirname: '', // flatten directory
-        }))
-        .pipe(gulp.dest(paths.wwwroot + folders.js)) // save .js
+        .pipe(gulp.dest(paths.wwwroot)) // save .js
         .pipe(uglify({ preserveComments: 'license' }))
         .pipe(rename({ extname: '.min.js' }))
         .pipe(sourcemaps.write('.'))
-        .pipe(gulp.dest(paths.wwwroot + folders.js)); // save .min.js
+        .pipe(gulp.dest(paths.wwwroot)); // save .min.js
 });
 gulp.task('typescript:watch', function() {
     var watcher = gulp.watch(paths.src + matches.typescript, ['typescript:compile']);
@@ -165,10 +171,7 @@ gulp.task('typescript', ['typescript:compile', 'typescript:watch']);
 /**** LESS */
 gulp.task('less:compile', function() {
     console.log('less:compile COMPILING!');
-    return gulp.src([
-        paths.src + folders.css + '/bootstrap/bootstrap.less',
-        paths.src + folders.css + '/app.less',
-    ], { base: paths.src })
+    return gulp.src([paths.src + matches.less], { base: paths.src })
         .pipe(plumber(function(error) {
             console.log('less:compile error', error);
         }))
@@ -176,14 +179,16 @@ gulp.task('less:compile', function() {
         .pipe(less().on('error', function(error) {
             console.log(error);
         }))
+        /*
         .pipe(rename({
             dirname: '' // flatten directory
         }))
-        .pipe(gulp.dest(paths.wwwroot + folders.css)) // save .css
+        */
+        .pipe(gulp.dest(paths.wwwroot)) // save .css
         .pipe(cssmin())
         .pipe(rename({ extname: '.min.css' }))
         .pipe(sourcemaps.write('.'))
-        .pipe(gulp.dest(paths.wwwroot + folders.css)); // save .min.css
+        .pipe(gulp.dest(paths.wwwroot)); // save .min.css
 });
 gulp.task('less:watch', function() {
     var watcher = gulp.watch(paths.src + matches.less, ['less:compile']);
@@ -224,4 +229,4 @@ gulp.task('serve', function() {
 });
 
 /**** START */
-gulp.task('start', ['angularjs', 'less', 'jade', 'typescript', 'serve']);
+gulp.task('start', ['angular2', 'angularjs', 'less', 'jade', 'typescript', 'serve']);
