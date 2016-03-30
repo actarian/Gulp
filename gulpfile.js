@@ -41,6 +41,11 @@ var matches = {
     typescript: '/**/*.ts',
 }
 
+var excludes = {
+    less: '/**/_*.less',
+    js: '/**/*.min.js',
+}
+
 var names = {
     vendors: '/vendors.js',
 }
@@ -49,89 +54,106 @@ paths.vendors = paths.wwwroot + folders.js + folders.vendors;
 
 /**** VENDORS */
 gulp.task('vendors:clean', function() {
+    return new Promise(function (resolve, reject) {
+		var v = vinyl();
+        gulp.src(paths.vendors + matches.everything)
+        .pipe(plumber(function(error) {
+            console.log('vendors:clean.plumber', error);
+            reject();
+        }))
+        .pipe(v)    
+        .on('end', function () {
+            del(v.paths).then(function() {
+                console.log('vendors:cleaned', v.paths);
+                resolve();
+            }).catch(function(){
+                console.log('vendors:clean.error', v.paths);
+                reject();
+            })
+        });
+	});
+    /*
     return gulp.src(paths.vendors + matches.everything)
         .pipe(plumber(function(error) {
             console.log('vendors:clean error', error);
         }))
         .pipe(vinyl(del));
+        */
     // return del([paths.vendors + matches.everything]);    
 });
 
 /**** ANGULARJS */
 var angularjs = {
-    src: [
+    src: [ // important!! keep loading order for bundle
         paths.bower + '/angular/angular.js',
         paths.bower + '/angular-route/angular-route.js',
         paths.bower + '/angular-animate/angular-animate.js',
     ]
 }
-gulp.task('angularjs:compile', function() {
+gulp.task('vendors:angularjs', ['vendors:clean'], function() {
     return gulp.src(angularjs.src, { base: '.' })
         .pipe(plumber(function(error) {
-            console.log('angularjs:compile error', error);
+            console.log('angularjs:compile.plumber', error);
         }))
         .pipe(rename({
             dirname: '', // flatten directory
         }))
         .pipe(gulp.dest(paths.vendors)) // save files
-        /*
-        .pipe(sourcemaps.init())
         .pipe(concat(paths.vendors + names.vendors))
         .pipe(gulp.dest('.')) // save .js
-        .pipe(uglify({ preserveComments: 'license' }))
+        .pipe(sourcemaps.init())
+        .pipe(uglify()) // { preserveComments: 'license' }
         .pipe(rename({ extname: '.min.js' }))
-        .pipe(sourcemaps.write('.'))
-        .pipe(gulp.dest('.')); // save .min.js
-        */  
+        .pipe(gulp.dest('.')) // save .min.js
+        .pipe(sourcemaps.write('.')); // save .map       
 });
 
-gulp.task('angularjs', ['vendors:clean', 'angularjs:compile'], function(done) { done(); });
+gulp.task('angularjs', ['vendors:clean', 'vendors:angularjs'], function(done) { done(); });
 
 /**** ANGULAR2 */
 var angular2 = {
-    src: [
-        paths.node + '/es6-shim/es6-shim.*',
-        paths.node + '/es6-promise/dist/es6-promise.*',
-        paths.node + '/angular2/es6/dev/src/testing/shims_for_IE.*',
-        paths.node + '/angular2/bundles/angular2-polyfills.*',
-        paths.node + '/angular2/bundles/angular2.*.*',
-        paths.node + '/angular2/bundles/http.*.*',
-        paths.node + '/angular2/bundles/router.*.*',
-        paths.node + '/rxjs/bundles/Rx.*',
-        paths.node + '/systemjs/dist/*.*',
+    src: [ // important!! keep loading order for bundle
+        paths.node + '/es6-shim/es6-shim.js',
+        paths.node + '/angular2/es6/dev/src/testing/shims_for_IE.js',
+        paths.node + '/systemjs/dist/system-polyfills.js',
+        paths.node + '/angular2/bundles/angular2-polyfills.js',
+        paths.node + '/systemjs/dist/system.js',
+        paths.node + '/rxjs/bundles/Rx.js',
+        paths.node + '/angular2/bundles/angular2.dev.js',
+        paths.node + '/angular2/bundles/http.dev.js',
+        paths.node + '/angular2/bundles/router.dev.js',        
     ]
 }
-gulp.task('angular2:compile', function() {
+gulp.task('vendors:angular2', ['vendors:clean'], function() {
     return gulp.src(angular2.src, { base: '.' })
         .pipe(plumber(function(error) {
-            console.log('angular2:compile error', error);
+            console.log('angular2:compile.plumber', error);
         }))
         .pipe(rename({
             dirname: '', // flatten directory
         }))        
         .pipe(gulp.dest(paths.vendors)) // save files
-        /*
-        .pipe(sourcemaps.init())
         .pipe(concat(paths.vendors + names.vendors))
         .pipe(gulp.dest('.')) // save .js
-        .pipe(uglify({ preserveComments: 'license' }))
+        .pipe(sourcemaps.init())
+        .pipe(uglify()) // { preserveComments: 'license' }
         .pipe(rename({ extname: '.min.js' }))
-        .pipe(sourcemaps.write('.'))
-        .pipe(gulp.dest('.')); // save .min.js
-        */  
+        .pipe(gulp.dest('.')) // save .min.js
+        .pipe(sourcemaps.write('.')); // save .map        
 });
-gulp.task('angular2', ['vendors:clean', 'angular2:compile'], function(done) { done(); });
+gulp.task('angular2', ['vendors:clean', 'vendors:angular2'], function(done) { done(); });
 
 /**** JADE */
 gulp.task('jade:compile', function() {
     var options = {
+        locals: {},
         pretty: true,
     };
     return gulp.src(paths.src + matches.jade)
         .pipe(plumber(function(error) {
-            console.log('jade:compile error', error);
+            console.log('jade:compile.plumber', error);
         }))
-        .pipe(jade({ locals: options }))
+        .pipe(jade(options))
         .pipe(gulp.dest(paths.wwwroot));
 });
 gulp.task('jade:watch', function() {
@@ -151,13 +173,14 @@ gulp.task('typescript:compile', function() {
     var result = project.src().pipe(typescript(project));
     return result.js
         .pipe(plumber(function(error) {
-            console.log('typescript:compile error', error);
+            console.log('typescript:compile.plumber', error);
         }))
         .pipe(gulp.dest(paths.wwwroot)) // save .js
+        .pipe(sourcemaps.init())
         .pipe(uglify({ preserveComments: 'license' }))
         .pipe(rename({ extname: '.min.js' }))
-        .pipe(sourcemaps.write('.'))
-        .pipe(gulp.dest(paths.wwwroot)); // save .min.js
+        .pipe(gulp.dest(paths.wwwroot)) // save .min.js
+        .pipe(sourcemaps.write('.')); // save .map        
 });
 gulp.task('typescript:watch', function() {
     var watcher = gulp.watch(paths.src + matches.typescript, ['typescript:compile']);
@@ -171,24 +194,22 @@ gulp.task('typescript', ['typescript:compile', 'typescript:watch']);
 /**** LESS */
 gulp.task('less:compile', function() {
     console.log('less:compile COMPILING!');
-    return gulp.src([paths.src + matches.less], { base: paths.src })
+    return gulp.src([
+            paths.src + matches.less,
+            '!' + paths.src + excludes.less,
+        ], { base: paths.src })
         .pipe(plumber(function(error) {
-            console.log('less:compile error', error);
+            console.log('less:compile.plumber', error);
         }))
-        .pipe(sourcemaps.init())
-        .pipe(less().on('error', function(error) {
+        .pipe(less().on('less:compile.error', function(error) {
             console.log(error);
         }))
-        /*
-        .pipe(rename({
-            dirname: '' // flatten directory
-        }))
-        */
         .pipe(gulp.dest(paths.wwwroot)) // save .css
+        .pipe(sourcemaps.init())
         .pipe(cssmin())
         .pipe(rename({ extname: '.min.css' }))
-        .pipe(sourcemaps.write('.'))
-        .pipe(gulp.dest(paths.wwwroot)); // save .min.css
+        .pipe(gulp.dest(paths.wwwroot)) // save .min.css
+        .pipe(sourcemaps.write('.')); // save .map        
 });
 gulp.task('less:watch', function() {
     var watcher = gulp.watch(paths.src + matches.less, ['less:compile']);
@@ -200,7 +221,7 @@ gulp.task('less:watch', function() {
 gulp.task('less', ['less:compile', 'less:watch']);
 
 /**** SERVE */
-gulp.task('serve', function() {
+gulp.task('serve', ['typescript:compile', 'less:compile', 'jade:compile'], function() {
     // more info on https://www.npmjs.com/package/gulp-webserver   
     var options = {
         host: 'localhost',
@@ -229,4 +250,19 @@ gulp.task('serve', function() {
 });
 
 /**** START */
-gulp.task('start', ['angular2', 'angularjs', 'less', 'jade', 'typescript', 'serve']);
+// angular2 startup task
+gulp.task('start', [
+    'vendors:clean', 'vendors:angular2', 
+    'typescript:compile', 'less:compile', 'jade:compile', 
+    'serve', 
+    'typescript:watch', 'less:watch', 'jade:watch'
+]);
+// angularjs startup task 
+/*
+gulp.task('start', [
+    'vendors:clean', 'vendors:angularjs', 
+    'typescript:compile', 'less:compile', 'jade:compile', 
+    'serve', 
+    'typescript:watch', 'less:watch', 'jade:watch'
+]);
+*/
