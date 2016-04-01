@@ -208,7 +208,7 @@ gulp.task('less:compile', function() {
         .pipe(less().on('less:compile.error', function(error) {
             console.log(error);
         }))
-        .pipe(autoprefixer({ browsers: [], cascade: false })) // autoprefixer
+        .pipe(autoprefixer()) // autoprefixer
         .pipe(gulp.dest(paths.wwwroot)) // save .css
         .pipe(sourcemaps.init())
         .pipe(cssmin())
@@ -238,7 +238,7 @@ gulp.task('sass:compile', function() {
         .pipe(sass().on('sass:compile.error', function(error) {
             console.log(error);
         }))
-        .pipe(autoprefixer({ browsers: [], cascade: false })) // autoprefixer
+        .pipe(autoprefixer()) // autoprefixer
         .pipe(gulp.dest(paths.wwwroot)) // save .css
         .pipe(sourcemaps.init())
         .pipe(cssmin())
