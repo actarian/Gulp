@@ -5,6 +5,8 @@
   "dependencies": {
     "bootstrap": "^4.0.0-alpha.2",
     "bootstrap-less": "^3.3.8",
+    "compass-sass-mixins": "^0.12.7",
+    "lesshat": "^3.0.2",
     "angular2": "2.0.0-beta.9",
     "systemjs": "0.19.24",
     "es6-promise": "^3.0.2",
@@ -22,6 +24,8 @@
     "gulp-cssmin": "^0.1.7",
     "gulp-jade": "^1.1.0",
     "gulp-less": "^3.0.5",
+    "gulp-sass": "^2.2.0",
+    "gulp-autoprefixer": "^3.1.0",
     "gulp-plumber": "^1.1.0",
     "gulp-rename": "^1.2.2",
     "gulp-sourcemaps": "^1.6.0",

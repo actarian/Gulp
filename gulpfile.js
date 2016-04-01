@@ -13,9 +13,11 @@ var gulp = require('gulp'),
     uglify = require('gulp-uglify'),
     watch = require('gulp-watch'),
     sourcemaps = require('gulp-sourcemaps'),
-    less = require('gulp-less'),
     jade = require('gulp-jade'),
-    typescript = require('gulp-typescript');
+    typescript = require('gulp-typescript'),
+    less = require('gulp-less'),
+    sass = require('gulp-sass'),
+    autoprefixer = require('gulp-autoprefixer');
 
 var paths = {
     node: './node_modules',
@@ -35,6 +37,7 @@ var folders = {
 var matches = {
     everything: '/**/*.*',
     less: '/**/*.less',
+    sass: '/**/*.scss',
     js: '/**/*.js',
     jsMin: '/**/*.min.js',
     jade: '/**/*.jade',
@@ -43,6 +46,7 @@ var matches = {
 
 var excludes = {
     less: '/**/_*.less',
+    sass: '/**/_*.scss',
     js: '/**/*.min.js',
 }
 
@@ -204,6 +208,7 @@ gulp.task('less:compile', function() {
         .pipe(less().on('less:compile.error', function(error) {
             console.log(error);
         }))
+        .pipe(autoprefixer({ browsers: [], cascade: false })) // autoprefixer
         .pipe(gulp.dest(paths.wwwroot)) // save .css
         .pipe(sourcemaps.init())
         .pipe(cssmin())
@@ -220,8 +225,38 @@ gulp.task('less:watch', function() {
 });
 gulp.task('less', ['less:compile', 'less:watch']);
 
+/**** SASS */
+gulp.task('sass:compile', function() {
+    console.log('sass:compile COMPILING!');
+    return gulp.src([
+            paths.src + matches.sass,
+            '!' + paths.src + excludes.sass,
+        ], { base: paths.src })
+        .pipe(plumber(function(error) {
+            console.log('sass:compile.plumber', error);
+        }))
+        .pipe(sass().on('sass:compile.error', function(error) {
+            console.log(error);
+        }))
+        .pipe(autoprefixer({ browsers: [], cascade: false })) // autoprefixer
+        .pipe(gulp.dest(paths.wwwroot)) // save .css
+        .pipe(sourcemaps.init())
+        .pipe(cssmin())
+        .pipe(rename({ extname: '.min.css' }))
+        .pipe(gulp.dest(paths.wwwroot)) // save .min.css
+        .pipe(sourcemaps.write('.')); // save .map        
+});
+gulp.task('sass:watch', function() {
+    var watcher = gulp.watch(paths.src + matches.sass, ['sass:compile']);
+    watcher.on('change', function(e) {
+        console.log('watcher.on.change type: ' + e.type + ' path: ' + e.path);
+    });
+    return watcher;
+});
+gulp.task('sass', ['sass:compile', 'sass:watch']);
+
 /**** SERVE */
-gulp.task('serve', ['typescript:compile', 'less:compile', 'jade:compile'], function() {
+gulp.task('serve', ['typescript:compile', 'less:compile', 'sass:compile', 'jade:compile'], function() {
     // more info on https://www.npmjs.com/package/gulp-webserver   
     var options = {
         host: 'localhost',
@@ -253,16 +288,16 @@ gulp.task('serve', ['typescript:compile', 'less:compile', 'jade:compile'], funct
 // angular2 startup task
 gulp.task('start', [
     'vendors:clean', 'vendors:angular2', 
-    'typescript:compile', 'less:compile', 'jade:compile', 
+    'typescript:compile', 'less:compile', 'sass:compile', 'jade:compile', 
     'serve', 
-    'typescript:watch', 'less:watch', 'jade:watch'
+    'typescript:watch', 'less:watch', 'sass:watch', 'jade:watch'
 ]);
 // angularjs startup task 
 /*
 gulp.task('start', [
     'vendors:clean', 'vendors:angularjs', 
-    'typescript:compile', 'less:compile', 'jade:compile', 
+    'typescript:compile', 'less:compile', 'sass:compile', 'jade:compile', 
     'serve', 
-    'typescript:watch', 'less:watch', 'jade:watch'
+    'typescript:watch', 'less:watch', 'sass:watch', 'jade:watch'
 ]);
 */
