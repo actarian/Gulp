@@ -42,19 +42,30 @@ var matches = {
     jsMin: '/**/*.min.js',
     jade: '/**/*.jade',
     typescript: '/**/*.ts',
-}
+};
 
 var excludes = {
     less: '/**/_*.less',
     sass: '/**/_*.scss',
     js: '/**/*.min.js',
-}
+};
 
 var names = {
     vendors: '/vendors.js',
-}
+};
 
 paths.vendors = paths.wwwroot + folders.js + folders.vendors;
+
+var browserlist = [
+    'Chrome > 10',
+    'Firefox > 10',
+    'Explorer > 8',
+    'Opera > 1',
+    'Safari > 10',
+    'iOS > 5',
+    'Edge > 1',
+    'ExplorerMobile > 1',
+];
 
 /**** VENDORS */
 gulp.task('vendors:clean', function() {
@@ -208,7 +219,7 @@ gulp.task('less:compile', function() {
         .pipe(less().on('less:compile.error', function(error) {
             console.log(error);
         }))
-        .pipe(autoprefixer()) // autoprefixer
+        .pipe(autoprefixer({ browsers: browserlist })) // autoprefixer
         .pipe(gulp.dest(paths.wwwroot)) // save .css
         .pipe(sourcemaps.init())
         .pipe(cssmin())
@@ -216,6 +227,7 @@ gulp.task('less:compile', function() {
         .pipe(gulp.dest(paths.wwwroot)) // save .min.css
         .pipe(sourcemaps.write('.')); // save .map        
 });
+
 gulp.task('less:watch', function() {
     var watcher = gulp.watch(paths.src + matches.less, ['less:compile']);
     watcher.on('change', function(e) {
@@ -238,7 +250,7 @@ gulp.task('sass:compile', function() {
         .pipe(sass().on('sass:compile.error', function(error) {
             console.log(error);
         }))
-        .pipe(autoprefixer()) // autoprefixer
+        .pipe(autoprefixer({ browsers: browserlist })) // autoprefixer
         .pipe(gulp.dest(paths.wwwroot)) // save .css
         .pipe(sourcemaps.init())
         .pipe(cssmin())
