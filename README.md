@@ -1,15 +1,30 @@
 
 #Gulp Project
 
-    - bower_components
-    - node_modules
-    - src
-    - typings 
-    - wwwroot
+```
+gulp
+├───bower_components
+├───node_modules
+├───src
+│   ├───app
+│   ├───css
+│   └───js
+│   index.jade
+│
+├───typings
+└───wwwroot
+    ├───app
+    ├───css
+    └───js
+    index.html
+    
+```
     
 ###Commands
 
-* **ctrl+shift+b** will launch **npm start**
+* **npm install**
+* **npm start**
+* on Visual Studio Code **ctrl+shift+b** will launch **npm start**
 
     
     
