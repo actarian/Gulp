@@ -1,5 +1,6 @@
 
-#Gulp Project
+Gulp Project [![GitHub version](https://badge.fury.io/gh/actarian%2FGulp.svg)](https://badge.fury.io/gh/actarian%2FGulp)
+============
 
 ```
 gulp

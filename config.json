@@ -1,0 +1,63 @@
+{
+    "name": "gulp-angular2",    
+    "paths": {
+        "node": "./node_modules",
+        "bower": "./bower_components",
+        "src": "./src",
+        "root": "./wwwroot"
+    },
+    "folders": {
+        "css": "/css",
+        "js": "/js"   
+    },
+    "bundles": {
+        "js": [{
+            "src": [
+                "./node_modules/es6-shim/es6-shim.js",
+                "./node_modules/angular2/es6/dev/src/testing/shims_for_IE.js",
+                "./node_modules/systemjs/dist/system-polyfills.js",
+                "./node_modules/angular2/bundles/angular2-polyfills.js",
+                "./node_modules/systemjs/dist/system.js",
+                "./node_modules/rxjs/bundles/Rx.js",
+                "./node_modules/angular2/bundles/angular2.dev.js",
+                "./node_modules/angular2/bundles/http.dev.js",
+                "./node_modules/angular2/bundles/router.dev.js"
+            ],
+            "folder": "./wwwroot/js/vendors",
+            "dist": "./wwwroot/js/vendors.js"
+        }, {
+            "src": [
+                "./src/js/utils/utils.js",
+                "./src/js/app.js",
+                "./src/js/animations/animations.js",
+                "./src/js/directives/directives.js",
+                "./src/js/models/models.js",
+                "./src/js/services/services.js",
+                "./src/js/controllers/controllers.js"
+            ],
+            "folder": "./wwwroot/js/app",
+            "dist": "./wwwroot/js/app.js"
+        }, {
+            "src": [
+                "./src/js/workers/http.js",
+                "./src/js/workers/loader.js"
+            ],
+            "folder": "./wwwroot/js/workers"
+        }],
+        "css": [] 
+    },
+    "browserlist": [
+        "Chrome >= 30",
+        "Firefox >= 30",
+        "Explorer >= 9",
+        "Opera >= 20",
+        "Safari >= 6",
+        "iOS >= 5",
+        "Edge >= 12",
+        "ExplorerMobile >= 10"
+    ],
+    "server": {
+        "name": "localhost",
+        "port": 8181
+    } 
+}

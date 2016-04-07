@@ -23,7 +23,7 @@ html(lang='en')
         script(src='/js/vendors/http.dev.js')
     else
         // minified
-        script(src='/js/vendors/vendors.min.js')
+        script(src='/js/vendors.min.js')
     script(type='text/javascript').
       System.config({ packages: { app: { format: 'register', defaultExtension: 'js' } } });
       System.import('/app/app.bootstrap').then(null, console.error.bind(console));

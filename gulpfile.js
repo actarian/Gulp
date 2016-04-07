@@ -1,8 +1,13 @@
-/// <binding ProjectOpened='typescript' />
+/// <binding ProjectOpened='start' />
 'use strict';
 
+
+/****************
+ *** REQUIRES ***
+ ****************/
 var gulp = require('gulp'),
-    vinyl = require('vinyl-paths'),
+    fs = require('fs'),
+    promise = require('es6-promise'),
     del = require('del'),
     rewrite = require('connect-modrewrite'),
     webserver = require('gulp-webserver'),
@@ -19,157 +24,66 @@ var gulp = require('gulp'),
     sass = require('gulp-sass'),
     autoprefixer = require('gulp-autoprefixer');
 
-var paths = {
-    node: './node_modules',
-    bower: './bower_components',
-    src: './src',
-    wwwroot: './wwwroot',
-};
 
-var folders = {
-    css: '/css',
-    js: '/js',
-    vendors: '/vendors',
-    typescript: '/js',
-    jade: '/',
-};
+/****************
+ *** DEFAULTS ***
+ ****************/
+var defaults = {};
 
+
+/*****************
+ *** VARIABLES ***
+ *****************/
+var config = JSON.parse(fs.readFileSync('./config.json'));
+for (var p in defaults) {
+    config[p] = config[p] || defaults[p];
+}
+var paths = config.paths;
+var folders = config.folders;
+var bundles = config.bundles;
+var browserlist = config.browserlist;
+var server = config.server;
+
+
+/****************
+ *** PATTERNS ***
+ ****************/
 var matches = {
     everything: '/**/*.*',
     less: '/**/*.less',
     sass: '/**/*.scss',
+    css: '/**/*.css',
     js: '/**/*.js',
-    jsMin: '/**/*.min.js',
-    jade: '/**/*.jade',
     typescript: '/**/*.ts',
+    jade: '/**/*.jade',    
 };
-
 var excludes = {
-    less: '/**/_*.less',
-    sass: '/**/_*.scss',
-    js: '/**/*.min.js',
+    everything: '/**/*.*',
+    less: "/**/_*.less",
+    sass: "/**/_*.scss",
+    css: "/**/*.min.css",
+    js: "/**/*.min.js"
 };
 
-var names = {
-    vendors: '/vendors.js',
-};
 
-paths.vendors = paths.wwwroot + folders.js + folders.vendors;
-
-var browserlist = [
-    'Chrome > 10',
-    'Firefox > 10',
-    'Explorer > 8',
-    'Opera > 1',
-    'Safari > 10',
-    'iOS > 5',
-    'Edge > 1',
-    'ExplorerMobile > 1',
-];
-
-/**** VENDORS */
-gulp.task('vendors:clean', function() {
-    return new Promise(function (resolve, reject) {
-		var v = vinyl();
-        gulp.src(paths.vendors + matches.everything)
-        .pipe(plumber(function(error) {
-            console.log('vendors:clean.plumber', error);
-            reject();
-        }))
-        .pipe(v)    
-        .on('end', function () {
-            del(v.paths).then(function() {
-                console.log('vendors:cleaned', v.paths);
-                resolve();
-            }).catch(function(){
-                console.log('vendors:clean.error', v.paths);
-                reject();
-            })
-        });
-	});
-    /*
-    return gulp.src(paths.vendors + matches.everything)
-        .pipe(plumber(function(error) {
-            console.log('vendors:clean error', error);
-        }))
-        .pipe(vinyl(del));
-        */
-    // return del([paths.vendors + matches.everything]);    
-});
-
-/**** ANGULARJS */
-var angularjs = {
-    src: [ // important!! keep loading order for bundle
-        paths.bower + '/angular/angular.js',
-        paths.bower + '/angular-route/angular-route.js',
-        paths.bower + '/angular-animate/angular-animate.js',
-    ]
-}
-gulp.task('vendors:angularjs', ['vendors:clean'], function() {
-    return gulp.src(angularjs.src, { base: '.' })
-        .pipe(plumber(function(error) {
-            console.log('angularjs:compile.plumber', error);
-        }))
-        .pipe(rename({
-            dirname: '', // flatten directory
-        }))
-        .pipe(gulp.dest(paths.vendors)) // save files
-        .pipe(concat(paths.vendors + names.vendors))
-        .pipe(gulp.dest('.')) // save .js
-        .pipe(sourcemaps.init())
-        .pipe(uglify()) // { preserveComments: 'license' }
-        .pipe(rename({ extname: '.min.js' }))
-        .pipe(gulp.dest('.')) // save .min.js
-        .pipe(sourcemaps.write('.')); // save .map       
-});
-
-gulp.task('angularjs', ['vendors:clean', 'vendors:angularjs'], function(done) { done(); });
-
-/**** ANGULAR2 */
-var angular2 = {
-    src: [ // important!! keep loading order for bundle
-        paths.node + '/es6-shim/es6-shim.js',
-        paths.node + '/angular2/es6/dev/src/testing/shims_for_IE.js',
-        paths.node + '/systemjs/dist/system-polyfills.js',
-        paths.node + '/angular2/bundles/angular2-polyfills.js',
-        paths.node + '/systemjs/dist/system.js',
-        paths.node + '/rxjs/bundles/Rx.js',
-        paths.node + '/angular2/bundles/angular2.dev.js',
-        paths.node + '/angular2/bundles/http.dev.js',
-        paths.node + '/angular2/bundles/router.dev.js',        
-    ]
-}
-gulp.task('vendors:angular2', ['vendors:clean'], function() {
-    return gulp.src(angular2.src, { base: '.' })
-        .pipe(plumber(function(error) {
-            console.log('angular2:compile.plumber', error);
-        }))
-        .pipe(rename({
-            dirname: '', // flatten directory
-        }))        
-        .pipe(gulp.dest(paths.vendors)) // save files
-        .pipe(concat(paths.vendors + names.vendors))
-        .pipe(gulp.dest('.')) // save .js
-        .pipe(sourcemaps.init())
-        .pipe(uglify()) // { preserveComments: 'license' }
-        .pipe(rename({ extname: '.min.js' }))
-        .pipe(gulp.dest('.')) // save .min.js
-        .pipe(sourcemaps.write('.')); // save .map        
-});
-gulp.task('angular2', ['vendors:clean', 'vendors:angular2'], function(done) { done(); });
-
-/**** JADE */
+/************
+ *** JADE ***
+ ************/
 gulp.task('jade:compile', function() {
     var options = {
         locals: {},
         pretty: true,
     };
-    return gulp.src(paths.src + matches.jade)
+    return gulp.src([
+        paths.src + matches.jade,
+        '!' + paths.node + excludes.everything,
+        '!' + paths.bower + excludes.everything,
+    ], { base: paths.src })
         .pipe(plumber(function(error) {
             console.log('jade:compile.plumber', error);
         }))
         .pipe(jade(options))
-        .pipe(gulp.dest(paths.wwwroot));
+        .pipe(gulp.dest(paths.root));
 });
 gulp.task('jade:watch', function() {
     var watcher = gulp.watch(paths.src + matches.jade, ['jade:compile']);
@@ -180,22 +94,29 @@ gulp.task('jade:watch', function() {
 });
 gulp.task('jade', ['jade:compile', 'jade:watch']);
 
-/**** TYPESCRIPT */
+
+/******************
+ *** TYPESCRIPT ***
+ ******************/
 var project = typescript.createProject('tsconfig.json', {
     typescript: require('typescript')
 });
 gulp.task('typescript:compile', function() {
-    var result = project.src().pipe(typescript(project));
-    return result.js
-        .pipe(plumber(function(error) {
+    var result = project.src()
+        .pipe(plumber(function (error) {
             console.log('typescript:compile.plumber', error);
         }))
-        .pipe(gulp.dest(paths.wwwroot)) // save .js
         .pipe(sourcemaps.init())
+        .pipe(typescript(project));
+    return result.js
+        .pipe(plumber(function (error) {
+            console.log('typescript:compile.plumber', error);
+        }))
+        .pipe(gulp.dest(paths.root)) // save .js
         .pipe(uglify({ preserveComments: 'license' }))
         .pipe(rename({ extname: '.min.js' }))
-        .pipe(gulp.dest(paths.wwwroot)) // save .min.js
-        .pipe(sourcemaps.write('.')); // save .map        
+        .pipe(gulp.dest(paths.root)) // save .min.js
+        .pipe(sourcemaps.write('.')); // save .map
 });
 gulp.task('typescript:watch', function() {
     var watcher = gulp.watch(paths.src + matches.typescript, ['typescript:compile']);
@@ -206,28 +127,32 @@ gulp.task('typescript:watch', function() {
 });
 gulp.task('typescript', ['typescript:compile', 'typescript:watch']);
 
-/**** LESS */
+
+/************
+ *** LESS ***
+ ************/
 gulp.task('less:compile', function() {
     console.log('less:compile COMPILING!');
     return gulp.src([
-            paths.src + matches.less,
-            '!' + paths.src + excludes.less,
-        ], { base: paths.src })
-        .pipe(plumber(function(error) {
+        paths.src + matches.less,
+        '!' + paths.src + excludes.less,
+        '!' + paths.node + excludes.everything,
+        '!' + paths.bower + excludes.everything,
+    ], { base: paths.src })
+        .pipe(plumber(function (error) {
             console.log('less:compile.plumber', error);
         }))
-        .pipe(less().on('less:compile.error', function(error) {
+        .pipe(sourcemaps.init())
+        .pipe(less().on('less:compile.error', function (error) {
             console.log(error);
         }))
+        .pipe(sourcemaps.write()) // save .map        
         .pipe(autoprefixer({ browsers: browserlist })) // autoprefixer
-        .pipe(gulp.dest(paths.wwwroot)) // save .css
-        .pipe(sourcemaps.init())
+        .pipe(gulp.dest(paths.root)) // save .css
         .pipe(cssmin())
         .pipe(rename({ extname: '.min.css' }))
-        .pipe(gulp.dest(paths.wwwroot)) // save .min.css
-        .pipe(sourcemaps.write('.')); // save .map        
+        .pipe(gulp.dest(paths.root)); // save .min.css
 });
-
 gulp.task('less:watch', function() {
     var watcher = gulp.watch(paths.src + matches.less, ['less:compile']);
     watcher.on('change', function(e) {
@@ -237,26 +162,31 @@ gulp.task('less:watch', function() {
 });
 gulp.task('less', ['less:compile', 'less:watch']);
 
-/**** SASS */
+
+/************
+ *** SASS ***
+ ************/
 gulp.task('sass:compile', function() {
     console.log('sass:compile COMPILING!');
     return gulp.src([
-            paths.src + matches.sass,
-            '!' + paths.src + excludes.sass,
-        ], { base: paths.src })
-        .pipe(plumber(function(error) {
+        paths.src + matches.sass,
+        '!' + paths.src + excludes.sass,
+        '!' + paths.node + excludes.everything,
+        '!' + paths.bower + excludes.everything,
+    ], { base: paths.src })
+        .pipe(plumber(function (error) {
             console.log('sass:compile.plumber', error);
         }))
-        .pipe(sass().on('sass:compile.error', function(error) {
+        .pipe(sourcemaps.init())
+        .pipe(sass().on('sass:compile.error', function (error) {
             console.log(error);
         }))
+        .pipe(sourcemaps.write()) // save .map        
         .pipe(autoprefixer({ browsers: browserlist })) // autoprefixer
-        .pipe(gulp.dest(paths.wwwroot)) // save .css
-        .pipe(sourcemaps.init())
+        .pipe(gulp.dest(paths.root)) // save .css
         .pipe(cssmin())
         .pipe(rename({ extname: '.min.css' }))
-        .pipe(gulp.dest(paths.wwwroot)) // save .min.css
-        .pipe(sourcemaps.write('.')); // save .map        
+        .pipe(gulp.dest(paths.root)); // save .min.css
 });
 gulp.task('sass:watch', function() {
     var watcher = gulp.watch(paths.src + matches.sass, ['sass:compile']);
@@ -267,12 +197,121 @@ gulp.task('sass:watch', function() {
 });
 gulp.task('sass', ['sass:compile', 'sass:watch']);
 
-/**** SERVE */
-gulp.task('serve', ['typescript:compile', 'less:compile', 'sass:compile', 'jade:compile'], function() {
+
+/******************
+ *** JS BUNDLES ***
+ ******************/
+var jsbundles = [];
+bundles.js.forEach(function(bundle, i) {
+    var key = 'js:bundle:' + i;    
+    jsbundles.push(key);
+    gulp.task(key, function() {
+        var pipes = gulp.src(bundle.src, { base: '.' })
+        .pipe(plumber(function(error) {
+            console.log(key + '.plumber', error);
+        }))
+        if (bundle.folder) {
+            console.log(key, 'do:folder', bundle.folder, bundle.src);
+            pipes = pipes.pipe(rename({
+                dirname: '', // flatten directory
+            })).pipe(gulp.dest(bundle.folder)); // copy files        
+        }
+        if (bundle.dist) { // concat bundle
+            console.log(key, 'do:concat', bundle.dist, bundle.src);
+            pipes = pipes.pipe(rename({
+                dirname: '', // flatten directory
+            }))
+            .pipe(concat(bundle.dist)) // concat bundle
+            .pipe(gulp.dest('.')) // save .js
+            .pipe(sourcemaps.init())
+            .pipe(uglify()) // { preserveComments: 'license' }
+            .pipe(rename({ extname: '.min.js' }))
+            .pipe(sourcemaps.write('.')) // save .map  
+            .pipe(gulp.dest('.')); // save .min.js            
+        }
+        return pipes;    
+    });
+});
+gulp.task('js:bundles', jsbundles, function(done) { done(); });
+gulp.task('js:watch', function () {
+    var sources = [];
+    bundles.js.forEach(function (bundle, i) {
+        bundle.src.forEach(function (src, i) {
+            sources.push(src);
+        });
+    });
+    var watcher = gulp.watch(sources, ['js:bundles']);
+    watcher.on('change', function(e) {
+        console.log(e.type + ' watcher did change path ' + e.path);
+    });
+    return watcher;
+});
+
+
+/*******************
+ *** CSS BUNDLES ***
+ *******************/
+var cssbundles = [];
+bundles.css.forEach(function(bundle, i) {
+    var key = 'css:bundle:' + i;    
+    jsbundles.push(key);
+    gulp.task(key, function() {
+        var pipes = gulp.src(bundle.src, { base: '.' })
+        .pipe(plumber(function(error) {
+            console.log(key + '.plumber', error);
+        }))
+        if (bundle.folder) {
+            console.log(key, 'do:folder', bundle.folder, bundle.src);
+            pipes = pipes.pipe(rename({
+                dirname: '', // flatten directory
+            })).pipe(gulp.dest(bundle.folder)); // copy files        
+        }
+        if (bundle.dist) {
+            console.log(key, 'do:concat', bundle.dist, bundle.src);
+            pipes = pipes.pipe(rename({
+                dirname: '', // flatten directory
+            }))
+            .pipe(concat(bundle.dist)) // concat bundle
+            .pipe(gulp.dest('.')) // save .css
+            .pipe(sourcemaps.init())
+            .pipe(cssmin())
+            .pipe(rename({ extname: '.min.css' }))
+            .pipe(sourcemaps.write('.')) // save .map  
+            .pipe(gulp.dest('.')); // save .min.css
+        }
+        return pipes;
+    });
+});
+gulp.task('css:bundles', cssbundles, function(done) { done(); });
+gulp.task('css:watch', function() {
+    var sources = [];
+    bundles.css.forEach(function (bundle, i) {
+        bundle.src.forEach(function (src, i) {
+            sources.push(src);
+        });
+    });
+    var watcher = gulp.watch(sources, ['css:bundles']);
+    watcher.on('change', function(e) {
+        console.log(e.type + ' watcher did change path ' + e.path);
+    });
+    return watcher;
+});
+
+
+/***************
+ *** COMPILE ***
+ ***************/
+gulp.task('compile', ['less:compile', 'sass:compile', 'css:bundles', 'js:bundles'], function(done) { done(); });
+
+
+/*************
+ *** SERVE ***
+ *************/
+gulp.task('serve', ['compile'], function() {
     // more info on https://www.npmjs.com/package/gulp-webserver   
     var options = {
-        host: 'localhost',
-        port: 8000,
+        host: server.name,
+        port: server.port,
         directoryListing: true,
         open: true,
         middleware: [
@@ -292,24 +331,17 @@ gulp.task('serve', ['typescript:compile', 'less:compile', 'sass:compile', 'jade:
             }
         },
     };
-    return gulp.src(paths.wwwroot)
-        .pipe(webserver(options));
+    return gulp.src(paths.root).pipe(webserver(options));
 });
 
-/**** START */
-// angular2 startup task
-gulp.task('start', [
-    'vendors:clean', 'vendors:angular2', 
-    'typescript:compile', 'less:compile', 'sass:compile', 'jade:compile', 
-    'serve', 
-    'typescript:watch', 'less:watch', 'sass:watch', 'jade:watch'
-]);
-// angularjs startup task 
-/*
-gulp.task('start', [
-    'vendors:clean', 'vendors:angularjs', 
-    'typescript:compile', 'less:compile', 'sass:compile', 'jade:compile', 
-    'serve', 
-    'typescript:watch', 'less:watch', 'sass:watch', 'jade:watch'
-]);
-*/
+
+/*************
+ *** WATCH ***
+ *************/
+gulp.task('watch', ['less:watch', 'sass:watch', 'typescript:watch', 'css:watch', 'js:watch', 'jade:watch'], function(done) { done(); });
+
+
+/*************
+ *** START ***
+ *************/
+gulp.task('start', ['compile', 'serve', 'watch'], function (done) { done(); });
