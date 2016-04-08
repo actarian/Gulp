@@ -142,12 +142,14 @@ gulp.task('less:compile', function() {
         .pipe(plumber(function (error) {
             console.log('less:compile.plumber', error);
         }))
-        .pipe(sourcemaps.init())
+        .pipe(sourcemaps.init({sourceRoot: paths.src}))
         .pipe(less().on('less:compile.error', function (error) {
             console.log(error);
-        }))
-        .pipe(sourcemaps.write()) // save .map        
+        }))        
+        .pipe(sourcemaps.write({includeContent: false}))
+        .pipe(sourcemaps.init({loadMaps: true}))        
         .pipe(autoprefixer({ browsers: browserlist })) // autoprefixer
+        .pipe(sourcemaps.write()) // save .map
         .pipe(gulp.dest(paths.root)) // save .css
         .pipe(cssmin())
         .pipe(rename({ extname: '.min.css' }))
@@ -176,13 +178,15 @@ gulp.task('sass:compile', function() {
     ], { base: paths.src })
         .pipe(plumber(function (error) {
             console.log('sass:compile.plumber', error);
-        }))
+        }))        
         .pipe(sourcemaps.init())
         .pipe(sass().on('sass:compile.error', function (error) {
             console.log(error);
         }))
-        .pipe(sourcemaps.write()) // save .map        
+        .pipe(sourcemaps.write({includeContent: false}))
+        .pipe(sourcemaps.init({loadMaps: true}))        
         .pipe(autoprefixer({ browsers: browserlist })) // autoprefixer
+        .pipe(sourcemaps.write()) // save .map
         .pipe(gulp.dest(paths.root)) // save .css
         .pipe(cssmin())
         .pipe(rename({ extname: '.min.css' }))

@@ -10,7 +10,8 @@
         "css": "/css",
         "js": "/js"   
     },
-    "bundles": {
+    "bundles": {        
+        "css": [], 
         "js": [{
             "src": [
                 "./node_modules/es6-shim/es6-shim.js",
@@ -43,8 +44,7 @@
                 "./src/js/workers/loader.js"
             ],
             "folder": "./wwwroot/js/workers"
-        }],
-        "css": [] 
+        }]
     },
     "browserlist": [
         "Chrome >= 30",
