@@ -345,3 +345,9 @@ gulp.task('watch', ['less:watch', 'sass:watch', 'typescript:watch', 'css:watch',
  *** START ***
  *************/
 gulp.task('start', ['compile', 'serve', 'watch'], function (done) { done(); });
+
+
+/*******************
+ *** TRAVIS TEST ***
+ *******************/
+gulp.task('test', ['compile'], function (done) { done(); });

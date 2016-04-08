@@ -51,6 +51,7 @@
     },
     "scripts": {
         "postinstall": "npm install gulp-cli bower typings -g && typings install && bower install",
-        "start": "gulp start"
+        "start": "gulp start",
+        "test": "gulp test"
     }
 }
