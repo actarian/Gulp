@@ -22,7 +22,8 @@ var gulp = require('gulp'),
     typescript = require('gulp-typescript'),
     less = require('gulp-less'),
     sass = require('gulp-sass'),
-    autoprefixer = require('gulp-autoprefixer');
+    autoprefixer = require('gulp-autoprefixer'),
+    sassdoc = require('sassdoc');
 
 
 /****************
@@ -55,7 +56,7 @@ var matches = {
     css: '/**/*.css',
     js: '/**/*.js',
     typescript: '/**/*.ts',
-    jade: '/**/*.jade',    
+    jade: '/**/*.jade',
 };
 var excludes = {
     everything: '/**/*.*',
@@ -145,9 +146,9 @@ gulp.task('less:compile', function() {
         .pipe(sourcemaps.init({sourceRoot: paths.src}))
         .pipe(less().on('less:compile.error', function (error) {
             console.log(error);
-        }))        
+        }))
         .pipe(sourcemaps.write({includeContent: false}))
-        .pipe(sourcemaps.init({loadMaps: true}))        
+        .pipe(sourcemaps.init({loadMaps: true}))
         .pipe(autoprefixer({ browsers: browserlist })) // autoprefixer
         .pipe(sourcemaps.write()) // save .map
         .pipe(gulp.dest(paths.root)) // save .css
@@ -178,13 +179,13 @@ gulp.task('sass:compile', function() {
     ], { base: paths.src })
         .pipe(plumber(function (error) {
             console.log('sass:compile.plumber', error);
-        }))        
+        }))
         .pipe(sourcemaps.init())
         .pipe(sass().on('sass:compile.error', function (error) {
             console.log(error);
         }))
         .pipe(sourcemaps.write({includeContent: false}))
-        .pipe(sourcemaps.init({loadMaps: true}))        
+        .pipe(sourcemaps.init({loadMaps: true}))
         .pipe(autoprefixer({ browsers: browserlist })) // autoprefixer
         .pipe(sourcemaps.write()) // save .map
         .pipe(gulp.dest(paths.root)) // save .css
@@ -207,7 +208,7 @@ gulp.task('sass', ['sass:compile', 'sass:watch']);
  ******************/
 var jsbundles = [];
 bundles.js.forEach(function(bundle, i) {
-    var key = 'js:bundle:' + i;    
+    var key = 'js:bundle:' + i;
     jsbundles.push(key);
     gulp.task(key, function() {
         var pipes = gulp.src(bundle.src, { base: '.' })
@@ -218,7 +219,7 @@ bundles.js.forEach(function(bundle, i) {
             console.log(key, 'do:folder', bundle.folder, bundle.src);
             pipes = pipes.pipe(rename({
                 dirname: '', // flatten directory
-            })).pipe(gulp.dest(bundle.folder)); // copy files        
+            })).pipe(gulp.dest(bundle.folder)); // copy files
         }
         if (bundle.dist) { // concat bundle
             console.log(key, 'do:concat', bundle.dist, bundle.src);
@@ -230,15 +231,15 @@ bundles.js.forEach(function(bundle, i) {
             .pipe(sourcemaps.init())
             .pipe(uglify()) // { preserveComments: 'license' }
             .pipe(rename({ extname: '.min.js' }))
-            .pipe(sourcemaps.write('.')) // save .map  
-            .pipe(gulp.dest('.')); // save .min.js            
+            .pipe(sourcemaps.write('.')) // save .map
+            .pipe(gulp.dest('.')); // save .min.js
         }
-        return pipes;    
+        return pipes;
     });
 });
 gulp.task('js:bundles', jsbundles, function(done) { done(); });
 gulp.task('js:watch', function () {
-    var sources = [];
+    var sources = ['./config.json'];
     bundles.js.forEach(function (bundle, i) {
         bundle.src.forEach(function (src, i) {
             sources.push(src);
@@ -257,7 +258,7 @@ gulp.task('js:watch', function () {
  *******************/
 var cssbundles = [];
 bundles.css.forEach(function(bundle, i) {
-    var key = 'css:bundle:' + i;    
+    var key = 'css:bundle:' + i;
     jsbundles.push(key);
     gulp.task(key, function() {
         var pipes = gulp.src(bundle.src, { base: '.' })
@@ -268,7 +269,7 @@ bundles.css.forEach(function(bundle, i) {
             console.log(key, 'do:folder', bundle.folder, bundle.src);
             pipes = pipes.pipe(rename({
                 dirname: '', // flatten directory
-            })).pipe(gulp.dest(bundle.folder)); // copy files        
+            })).pipe(gulp.dest(bundle.folder)); // copy files
         }
         if (bundle.dist) {
             console.log(key, 'do:concat', bundle.dist, bundle.src);
@@ -280,7 +281,7 @@ bundles.css.forEach(function(bundle, i) {
             .pipe(sourcemaps.init())
             .pipe(cssmin())
             .pipe(rename({ extname: '.min.css' }))
-            .pipe(sourcemaps.write('.')) // save .map  
+            .pipe(sourcemaps.write('.')) // save .map
             .pipe(gulp.dest('.')); // save .min.css
         }
         return pipes;
@@ -288,7 +289,7 @@ bundles.css.forEach(function(bundle, i) {
 });
 gulp.task('css:bundles', cssbundles, function(done) { done(); });
 gulp.task('css:watch', function() {
-    var sources = [];
+    var sources = ['./config.json'];
     bundles.css.forEach(function (bundle, i) {
         bundle.src.forEach(function (src, i) {
             sources.push(src);
@@ -312,7 +313,7 @@ gulp.task('compile', ['less:compile', 'sass:compile', 'css:bundles', 'js:bundles
  *** SERVE ***
  *************/
 gulp.task('serve', ['compile'], function() {
-    // more info on https://www.npmjs.com/package/gulp-webserver   
+    // more info on https://www.npmjs.com/package/gulp-webserver
     var options = {
         host: server.name,
         port: server.port,
@@ -329,7 +330,7 @@ gulp.task('serve', ['compile'], function() {
             },
         ],
         livereload: {
-            enable: true, // need this set to true to enable livereload 
+            enable: true, // need this set to true to enable livereload
             filter: function(filename) {
                 return !filename.match(/.map$/); // exclude all source maps from livereload
             }
@@ -355,3 +356,23 @@ gulp.task('start', ['compile', 'serve', 'watch'], function (done) { done(); });
  *** TRAVIS TEST ***
  *******************/
 gulp.task('test', ['compile'], function (done) { done(); });
+
+
+/*******************
+ *** SASS : DOCS ***
+ *******************/
+gulp.task('sass:docs', function() {
+    console.log('sass:docs');
+    return gulp.src([
+        paths.src + matches.sass,
+        '!' + paths.src + excludes.sass,
+        '!' + paths.node + excludes.everything,
+        '!' + paths.bower + excludes.everything,
+    ], { base: paths.src })
+        .pipe(plumber(function (error) {
+            console.log('sass:compile.plumber', error);
+        }))
+        .pipe(sassdoc({ dest: './wwwroot/docs' }).on('sass:compile.error', function (error) {
+            console.log(error);
+        }))
+});

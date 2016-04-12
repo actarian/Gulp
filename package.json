@@ -47,7 +47,8 @@
         "gulp-watch": "^4.3.5",
         "gulp-webserver": "^0.9.1",
         "typescript": "^1.8.7",
-        "typings": "^0.7.8"
+        "typings": "^0.7.8",
+        "sassdoc": "^2.1.20"        
     },
     "scripts": {
         "postinstall": "npm install gulp-cli bower typings -g && typings install && bower install",
